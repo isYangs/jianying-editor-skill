@@ -1,7 +1,6 @@
 uiautomation==2.0.20
 playwright==1.52.0
 pynput==1.7.7
-edge-tts==7.2.3
 pymediainfo==7.0.1
 numpy>=2.0.0
 psutil>=5.9.0
