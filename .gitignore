@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.bak
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Build / temp
+*.egg-info/
+dist/
+build/
+*.log
+test_run_artifacts/
+cloud_cache/
+scripts/cloud_cache/
+*.webm
+
+# Assets (large synced files - keep tracked manually)
+# assets/jy_sync/
