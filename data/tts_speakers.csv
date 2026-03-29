@@ -1,7 +1,9 @@
 # JianYing TTS Speakers Library
 # AI Guidance: Use speaker_id with TTS APIs or wrapper methods for voice generation.
 # Schema: speaker_id,name_hint,categories
+# Last verified: 2026-03-29 (macOS SAMI API probe)
 speaker_id,name_hint,categories
+zh_female_naying,直率英子,tts|热门
 zh_female_xiaopengyou,小孩,tts|热门
 zh_male_iclvop_zhangjinxiangnanzhu,磁性男声,tts|热门
 BV408_streaming,译制片男,tts|热门
@@ -28,7 +30,6 @@ BV405_streaming,甜美解说,tts|热门
 zh_male_iclvop_chenxuanad,朗诵男声,tts|热门
 zh_female_iclvop_zdjxsusuyule,萌萌小可酱,tts|热门
 ICL_zh_female_manbo_jianying,曼波讲故事,tts|热门
-BV504_streaming,Energetic Male (English),tts|热门
 zh_female_iclvop_gzycwxiangling,俏皮少女,tts|热门
 zh_female_peiqi,佩奇猪,tts|热门
 BV056_streaming,阳光男生,tts|热门
