@@ -1,9 +1,69 @@
 import os
 import uuid
+import json
+import subprocess
 import pymediainfo
 
 from typing import Optional, Literal
 from typing import Dict, Any
+
+
+def _get_video_info_ffprobe(path: str) -> Optional[Dict]:
+    """使用 ffprobe 获取视频信息（pymediainfo 的 fallback）"""
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "stream=width,height,duration",
+        "-show_entries", "format=duration",
+        "-of", "json",
+        path
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            streams = data.get("streams", [])
+            duration = None
+            
+            # 优先取视频轨道的 duration
+            for stream in streams:
+                if stream.get("codec_type") == "video":
+                    return {
+                        "width": stream.get("width", 1920),
+                        "height": stream.get("height", 1080),
+                        "duration": stream.get("duration")
+                    }
+            
+            # 否则取 format 的 duration
+            fmt = data.get("format", {})
+            if fmt.get("duration"):
+                return {
+                    "width": 1920,
+                    "height": 1080,
+                    "duration": float(fmt["duration"])
+                }
+    except Exception:
+        pass
+    return None
+
+
+def _get_audio_info_ffprobe(path: str) -> Optional[float]:
+    """使用 ffprobe 获取音频时长（pymediainfo 的 fallback）"""
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "json",
+        path
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            fmt = data.get("format", {})
+            if fmt.get("duration"):
+                return float(fmt["duration"])
+    except Exception:
+        pass
+    return None
 
 class CropSettings:
     """素材的裁剪设置, 各属性均在0-1之间, 注意素材的坐标原点在左上角"""
@@ -81,8 +141,35 @@ class VideoMaterial:
         self.crop_settings = crop_settings
         self.local_material_id = ""
 
-        if not pymediainfo.MediaInfo.can_parse():
-            raise ValueError(f"不支持的视频素材类型 '{postfix}'")
+        # 检查 pymediainfo 是否可用
+        can_parse = False
+        try:
+            can_parse = pymediainfo.MediaInfo.can_parse()
+        except Exception:
+            pass
+
+        if not can_parse:
+            # pymediainfo 不可用，尝试用 ffprobe
+            ffprobe_info = _get_video_info_ffprobe(path)
+            if ffprobe_info:
+                self.material_type = "video"
+                self.width = ffprobe_info.get("width", 1920)
+                self.height = ffprobe_info.get("height", 1080)
+                dur = ffprobe_info.get("duration")
+                if dur:
+                    self.duration = int(dur * 1e6)
+                elif duration is not None:
+                    self.duration = duration
+                else:
+                    self.duration = 10 * 1000 * 1000  # 10s default
+            elif duration is not None:
+                # 最后 fallback：使用传入的 duration
+                self.material_type = "video"
+                self.duration = duration
+                self.width, self.height = 1920, 1080
+            else:
+                raise ValueError(f"无法解析视频 '{path}'，pymediainfo 和 ffprobe 都不可用")
+            return
 
         try:
             info: pymediainfo.MediaInfo = \
@@ -105,20 +192,19 @@ class VideoMaterial:
                         
                 self.width, self.height = info.video_tracks[0].width, info.video_tracks[0].height 
             
-            # gif文件使用imageio库获取长度
+            # gif文件使用 ffprobe 获取长度
             elif postfix.lower() == ".gif":
-                import imageio
-                gif = imageio.get_reader(path)
-
-                self.material_type = "video"
-                self.duration = int(round(gif.get_meta_data()['duration'] * gif.get_length() * 1e3))
-                # Fix potential variable name error in original code (info.image_tracks usage in gif block)
-                # Assuming gif assumes image track presence or width/height availability
-                # Keeping original logic structure but ensuring safety
-                self.width, self.height = 1920, 1080 # Default fallback if imageio fails
-                if len(info.image_tracks):
-                     self.width, self.height = info.image_tracks[0].width, info.image_tracks[0].height
-                gif.close()
+                ffprobe_info = _get_video_info_ffprobe(path)
+                if ffprobe_info:
+                    self.material_type = "video"
+                    self.width = ffprobe_info.get("width", 1920)
+                    self.height = ffprobe_info.get("height", 1080)
+                    dur = ffprobe_info.get("duration")
+                    self.duration = int(dur * 1e6) if dur else 10 * 1000 * 1000
+                else:
+                    self.material_type = "video"
+                    self.duration = 10 * 1000 * 1000  # 10s default
+                    self.width, self.height = 1920, 1080
 
             elif len(info.image_tracks):
                 self.material_type = "photo"
@@ -196,8 +282,21 @@ class AudioMaterial:
         self.material_id = uuid.uuid4().hex
         self.path = path
 
-        if not pymediainfo.MediaInfo.can_parse():
+        # 检查 pymediainfo 是否可用
+        can_parse = False
+        try:
+            can_parse = pymediainfo.MediaInfo.can_parse()
+        except Exception:
+            pass
+
+        if not can_parse:
+            # pymediainfo 不可用，尝试用 ffprobe
+            ffprobe_dur = _get_audio_info_ffprobe(path)
+            if ffprobe_dur:
+                self.duration = int(ffprobe_dur * 1e6)
+                return
             raise ValueError("不支持的音频素材类型 %s" % os.path.splitext(path)[1])
+
         info: pymediainfo.MediaInfo = pymediainfo.MediaInfo.parse(path)  # type: ignore
         if len(info.video_tracks):
             raise ValueError("音频素材不应包含视频轨道")

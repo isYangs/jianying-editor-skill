@@ -76,7 +76,7 @@ async def test_speaker(speaker_id: str, dev_id: str, iid: str) -> bool:
         "passport-auth": "asgw",
         "User-Agent": "Cronet/TTNetVersion:3024dcd7 2023-10-18 QuicVersion:4bf243e0 2023-04-17"
     }
-    
+
     task_id = f"test_{os.urandom(4).hex()}"
     msg = {
         "app_id": APP_ID,
@@ -91,11 +91,11 @@ async def test_speaker(speaker_id: str, dev_id: str, iid: str) -> bool:
             "audio_config": {"format": "ogg_opus", "sample_rate": 24000, "bit_rate": 64000}
         }, ensure_ascii=False, separators=(",", ":")),
     }
-    
+
     try:
         async with websockets.connect(ws_url, additional_headers=headers, ssl=ssl.create_default_context(), open_timeout=20) as ws:
             await ws.send(json.dumps(msg, ensure_ascii=False, separators=(",", ":")))
-            
+
             # 收集所有响应直到收到音频数据或超时
             while True:
                 try:
@@ -145,7 +145,7 @@ async def probe_all_speakers():
         else:
             print("❌ 无效")
             invalid_speakers.append(speaker)
-        
+
         await asyncio.sleep(0.3)  # 避免请求过快
         print(f"\n✅ 有效音色 ({len(valid_speakers)}):")
         for s in valid_speakers:
