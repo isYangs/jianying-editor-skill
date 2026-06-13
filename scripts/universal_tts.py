@@ -2,7 +2,9 @@ import asyncio
 import json
 import os
 import re
+import shutil
 import ssl
+import subprocess
 from typing import Optional, Tuple
 
 import websockets
@@ -51,6 +53,81 @@ def get_jy_local_config() -> Tuple[str, str]:
 
 APP_KEY = "IZjhUeAYwP"
 APP_ID = "3704"
+
+
+def split_voiceover_sentences(text: str):
+    """Split Chinese voiceover copy while preserving sentence punctuation."""
+    if not text or not text.strip():
+        return []
+    normalized = re.sub(r"\r\n?", "\n", text.strip())
+    parts = re.split(r"([。！？!?；;\n]+)", normalized)
+    sentences = []
+    for index in range(0, len(parts), 2):
+        body = parts[index].strip()
+        punctuation = parts[index + 1].strip() if index + 1 < len(parts) else ""
+        sentence = f"{body}{punctuation}".strip()
+        if sentence:
+            sentences.append(sentence)
+    return sentences or [normalized]
+
+
+def _format_speed(value: float) -> str:
+    return f"{value:.8f}".rstrip("0").rstrip(".")
+
+
+def build_atempo_filter(speed: float) -> str:
+    speed = float(speed)
+    if speed <= 0:
+        raise ValueError("speed must be greater than zero")
+
+    factors = []
+    remaining = speed
+    while remaining > 2.0 + 1e-9:
+        factors.append(2.0)
+        remaining /= 2.0
+    while remaining < 0.5 - 1e-9:
+        factors.append(0.5)
+        remaining /= 0.5
+    if abs(remaining - 1.0) > 1e-9 or not factors:
+        factors.append(remaining)
+    return ",".join(f"atempo={_format_speed(factor)}" for factor in factors)
+
+
+def speed_up_audio(input_path: str, output_path: str, speed: float = 1.2) -> str:
+    if not os.path.exists(input_path):
+        raise FileNotFoundError(input_path)
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+
+    if abs(float(speed) - 1.0) <= 1e-9:
+        shutil.copyfile(input_path, output_path)
+        return output_path
+
+    result = subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-i",
+            input_path,
+            "-filter:a",
+            build_atempo_filter(speed),
+            "-vn",
+            "-c:a",
+            "libopus",
+            "-b:a",
+            "64k",
+            output_path,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
+    )
+    if result.returncode != 0 or not os.path.exists(output_path):
+        detail = (result.stderr or result.stdout or "unknown ffmpeg error").strip()
+        raise RuntimeError(f"Unable to change voiceover speed: {detail}")
+    return output_path
 
 
 def _build_ssl_context() -> ssl.SSLContext:
