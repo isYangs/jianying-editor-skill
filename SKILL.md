@@ -53,6 +53,7 @@ Read the individual rule files for specific tasks and constraints:
 
 - 云端视频 + 云端音乐：`rules/media.md` + `rules/audio-voice.md` -> `examples/cloud_video_music_tts_demo.py`
 - 旁白与字幕对齐：`rules/text.md` + `rules/audio-voice.md` -> `examples/cloud_video_music_tts_demo.py`
+- 剪映深度思考写稿 + 曼波讲故事 1.2x + 时间线：`project.add_ai_voiceover(...)` -> `rules/audio-voice.md`
 - 录屏与智能变焦：`rules/recording.md` -> `tools/recording/recorder.py` (Windows) / `tools/recording/macos_recorder.py` (macOS)
 - 批量导出/无头导出：`rules/core.md` + `rules/cli.md` -> `examples/robust_auto_export.py`
 - 影视解说生成：`rules/generative.md` -> `scripts/movie_commentary_builder.py`

@@ -38,6 +38,21 @@ JyProject(project_name: str, width: int = 1920, height: int = 1080, drafts_root:
 - `add_text_simple(text, start_time=None, duration="3s", track_name="Subtitles", **kwargs)`
 - `add_tts_intelligent(text, speaker="zh_male_huoli", start_time=None, track_name="AudioTrack")`
 - `add_narrated_subtitles(text, speaker="zh_female_xiaopengyou", start_time=None, track_name="Subtitles")`
+- `add_ai_voiceover(prompt, start_time=None, speaker="ICL_zh_female_manbo_jianying", speed=1.2, sentence_gap="100ms", voice_track="AI VoiceOver", subtitle_track="AI Subtitles", model="deepseek-r1", need_reasoning=True, writer_credentials=None, writer_timeout=120.0)`
+- `add_ai_voiceover_async(...)`: async equivalent.
+
+`add_ai_voiceover(...)` directly calls JianYing's `smart_text_v2` writer with deep reasoning,
+generates sentence-level `曼波讲故事` audio through SAMI, applies real `1.2x` FFmpeg speed
+conversion, and adds duration-matched audio and subtitles only after every asset is valid.
+It has no UI automation fallback and is verified against JianYing Pro `10.7.0.14095`.
+
+```python
+result = project.add_ai_voiceover(
+    "写一段30秒口播稿，主题是普通人为什么越来越难存钱。",
+    start_time="0s",
+)
+print(result["text"], result["reasoning"])
+```
 
 `add_text_simple(..., **kwargs)` supports `style`, `border`, `clip_settings`, `font`, `background`, `shadow`.
 Use `clip_settings=draft.ClipSettings(transform_y=-0.8)` for subtitle bottom position.

@@ -40,7 +40,31 @@ project.add_narrated_subtitles(
 )
 ```
 
-## 3) BGM / SFX Sourcing
+## 3) JianYing AI Writer + Manbo Voiceover
+
+Use `project.add_ai_voiceover(...)` when the user wants JianYing to generate the copy and
+place synchronized narration and subtitles on the timeline in one operation.
+
+```python
+result = project.add_ai_voiceover(
+    "写一段关于年轻人存钱困难的30秒口播稿。",
+    start_time="0s",
+)
+```
+
+Defaults:
+
+- JianYing `smart_text_v2` with `deepseek-r1` reasoning
+- `ICL_zh_female_manbo_jianying` (`曼波讲故事`)
+- real FFmpeg `1.2x` speed conversion
+- `100ms` sentence gap
+- tracks `AI VoiceOver` and `AI Subtitles`
+- no UI fallback
+
+All audio files are generated and validated before the timeline is changed. Compatibility is
+verified against JianYing Pro `10.7.0.14095`.
+
+## 4) BGM / SFX Sourcing
 
 Data files:
 
@@ -66,10 +90,10 @@ if bgm:
 project.add_cloud_media("7135753343380606242", start_time="5s", duration="2s", track_name="SFX_Track")
 ```
 
-## 4) Mandatory Mixing Rule
+## 5) Mandatory Mixing Rule
 
 When narration and background music coexist, set BGM volume to `0.6` by default.
 
-## 5) Fallback
+## 6) Fallback
 
 If cloud/local assets are unavailable, use royalty-free web audio, download to local file, then call `add_audio_safe(...)`.
