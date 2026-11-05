@@ -185,6 +185,19 @@ class JyProject(JyProjectBase, MediaOpsMixin, TextOpsMixin, VfxOpsMixin, Mocking
                 }
         else:
             # Windows 本地导出
+            from core.windows_export_agent import export_draft_task
+            res_key = resolution if resolution in ('2K', '4K', '8K') else f'{resolution}P'
+            fr_key = f'{fps}fps'
+            print(f'🚀 正在本地导出: {self.name} -> {output_path}')
+            result = export_draft_task(self.name, output_path, resolution=res_key, framerate=fr_key)
+            if result.get('status') == 'success':
+                return {
+                    'status': 'exported',
+                    'draft_name': self.name,
+                    'output_path': output_path,
+                    'task_id': result.get('task_id')
+                }
+            return result
 
     @staticmethod
     def get_screen_recorder(output_dir: str = None):
