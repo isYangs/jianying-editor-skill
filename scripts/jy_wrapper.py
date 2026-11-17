@@ -185,6 +185,16 @@ class JyProject(JyProjectBase, MediaOpsMixin, TextOpsMixin, VfxOpsMixin, Mocking
                 }
         else:
             # Windows 本地导出
+            # 注意: JianyingController 的导出控件目前仅适配剪映 6 及以下版本；
+            # 11.x 上该步骤可能失败，失败时会返回 status=failed 并在异常信息中体现。
+            try:
+                controller = get_platform_controller()
+                controller.export_draft(self.name, output_path)
+                print(f"✅ 导出完成: {output_path}")
+                return {"status": "success", "output": output_path}
+            except Exception as e:
+                print(f"❌ 本地导出失败: {e}")
+                return {"status": "failed", "error": str(e)}
 
     @staticmethod
     def get_screen_recorder(output_dir: str = None):
